@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Asset Hunter
 // @namespace    https://github.com/xedinho/Asset-Hunter
-// @version      5.5.1
-// @description  Search Ripper.Store for Booth assets — DL detection, watchlist, LF post system, and settings
+// @version      5.5.2
+// @description  Search Ripper.Store for assets — DL detection, watchlist, LF post system, etc
 // @author       Empalar
 // @license      MIT
 // @match        *://booth.pm/*
