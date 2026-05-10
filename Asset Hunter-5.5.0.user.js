@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Asset Hunter
 // @namespace    https://github.com/xedinho/Asset-Hunter
-// @version      5.5.2
+// @version      5.5.4
 // @description  Search Ripper.Store for assets — DL detection, watchlist, LF post system, etc
-// @author       Empalar
+// @author       Xedinho
 // @license      MIT
 // @match        *://booth.pm/*
 // @match        *://*.booth.pm/*
@@ -136,7 +136,7 @@
   }
 
   // ─── Watermark ────────────────────────────────────────────────────────────
-  const WATERMARK = "\n\n---\n# Posted via Asset Hunter [by: Empalar]";
+  const WATERMARK = "\n\n---\n# Posted via[Asset Hunter](https://forum.ripper.store/topic/108432/asset-hunter)";
 
   // ─── Category color map ───────────────────────────────────────────────────
   const CAT_COLORS = {
@@ -1346,7 +1346,7 @@
           <textarea class="ah-set-input" id="ah-set-bodyTpl" rows="6">${esc(getSetting("bodyTpl"))}</textarea>
           <div class="ah-set-wm-box">
             <span class="ah-set-wm-label">${t("wmLabel")}</span>
-            <pre class="ah-set-wm-pre">---\n# Posted via Asset Hunter [by: Empalar]</pre>
+            <pre class="ah-set-wm-pre">---\n# Posted via Asset Hunter</pre>
           </div>
         </div>
 
