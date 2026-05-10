@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Asset Hunter
 // @namespace    https://github.com/xedinho/Asset-Hunter
-// @version      5.5.7
+// @version      5.5.8
 // @description  Search Ripper.Store for assets (DL detection, watchlist, LF post system, etc)
 // @author       Xedinho
 // @license      MIT
@@ -17,9 +17,9 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @connect      forum.ripper.store
-// @downloadURL  https://raw.githubusercontent.com/xedinho/Asset-Hunter/main/Asset%20Hunter-5.5.0.user.js
-// @updateURL    https://raw.githubusercontent.com/xedinho/Asset-Hunter/main/Asset%20Hunter.meta.js
 // @run-at       document-idle
+// @downloadURL https://update.greasyfork.org/scripts/577406/Asset%20Hunter.user.js
+// @updateURL https://update.greasyfork.org/scripts/577406/Asset%20Hunter.meta.js
 // ==/UserScript==
 
 (function () {
@@ -1570,7 +1570,7 @@
     }
 
     // ── Watchlist re-check ──
-    function runWatchlistCheck() {
+function runWatchlistCheck() {
       panel.querySelectorAll(".ah-tab").forEach(b => b.classList.remove("ah-tab--active"));
       panel.querySelector('[data-tab="watchlist"]').classList.add("ah-tab--active");
       Object.entries(PANES).forEach(([k, sel]) => {
@@ -1582,64 +1582,82 @@
       list.forEach(item => { item.status = "pending"; });
       wlSave(list); renderWatchlist();
 
-      let i = 0;
-      function nextCheck() {
-        if (i >= list.length) return;
-        const item = list[i++];
-        doSearch(item.id || item.name, (err, data) => {
-          const cur   = wlGet();
-          const entry = cur.find(x => x.url === item.url);
-          if (!entry) { setTimeout(nextCheck, WATCHLIST_RECHECK_DELAY_MS); return; }
+      const CONCURRENCY = 2;
+      const ITEM_DELAY_MS = 1200;
+      let idx = 0;
+      let active = 0;
 
-          if (err || !data || !data.matchCount || !data.posts || !data.posts.length) {
-            entry.status = "none"; entry.lastChecked = Date.now();
-            wlSave(cur); renderWatchlist(); setTimeout(nextCheck, WATCHLIST_RECHECK_DELAY_MS); return;
-          }
-
-          const giftsPost = data.posts.find(p => isGiftsCategory(p.category || {}));
-          if (giftsPost) {
-            const tp = giftsPost.topic || {};
-            entry.status = "dl";
-            entry.lastChecked = Date.now();
-            entry.ripperTid   = tp.tid || null;
-            entry.ripperSlug  = tp.slug || tp.tid || null;
-            wlSave(cur); renderWatchlist();
-            setTimeout(nextCheck, WATCHLIST_RECHECK_DELAY_MS);
-            return;
-          }
-
-          const topics = data.posts.map(p => ({ tid: (p.topic || {}).tid, slug: (p.topic || {}).slug })).filter(x => x.tid);
-          let foundDL  = false;
-          function checkNext(idx) {
-            if (foundDL) return;
-            if (idx >= topics.length) {
-              if (!foundDL) {
-                entry.status = "found";
-                entry.lastChecked = Date.now();
-                if (topics.length > 0) {
-                  entry.ripperTid  = topics[0].tid;
-                  entry.ripperSlug = topics[0].slug || topics[0].tid;
-                }
-                wlSave(cur); renderWatchlist();
-              }
-              setTimeout(nextCheck, WATCHLIST_RECHECK_DELAY_MS); return;
-            }
-            checkDL(topics[idx].tid, (confirmed) => {
-              if (confirmed && !foundDL) {
-                foundDL = true;
-                entry.status = "dl";
-                entry.lastChecked = Date.now();
-                entry.ripperTid  = topics[idx].tid;
-                entry.ripperSlug = topics[idx].slug || topics[idx].tid;
-                wlSave(cur); renderWatchlist();
-                setTimeout(nextCheck, WATCHLIST_RECHECK_DELAY_MS);
-              } else { checkNext(idx + 1); }
-            });
-          }
-          checkNext(0);
-        });
+      function scheduleNext() {
+        while (active < CONCURRENCY && idx < list.length) {
+          active++;
+          const item = list[idx++];
+          processItem(item, () => {
+            active--;
+            scheduleNext();
+          });
+        }
       }
-      nextCheck();
+
+      function processItem(item, done) {
+        setTimeout(() => {
+          doSearch(item.id || item.name, (err, data) => {
+            const cur   = wlGet();
+            const entry = cur.find(x => x.url === item.url);
+            if (!entry) { done(); return; }
+
+            if (err || !data || !data.matchCount || !data.posts || !data.posts.length) {
+              entry.status = "none"; entry.lastChecked = Date.now();
+              wlSave(cur); renderWatchlist(); done(); return;
+            }
+
+            const giftsPost = data.posts.find(p => isGiftsCategory(p.category || {}));
+            if (giftsPost) {
+              const tp = giftsPost.topic || {};
+              entry.status      = "dl";
+              entry.lastChecked = Date.now();
+              entry.ripperTid   = tp.tid || null;
+              entry.ripperSlug  = tp.slug || tp.tid || null;
+              wlSave(cur); renderWatchlist(); done(); return;
+            }
+
+            const topics = data.posts
+              .map(p => ({ tid: (p.topic || {}).tid, slug: (p.topic || {}).slug }))
+              .filter(x => x.tid);
+
+            let foundDL = false;
+            function checkNext(tidIdx) {
+              if (tidIdx >= topics.length) {
+                if (!foundDL) {
+                  entry.status      = topics.length ? "found" : "none";
+                  entry.lastChecked = Date.now();
+                  if (topics.length) {
+                    entry.ripperTid  = topics[0].tid;
+                    entry.ripperSlug = topics[0].slug || topics[0].tid;
+                  }
+                  wlSave(cur); renderWatchlist();
+                }
+                done(); return;
+              }
+              checkDL(topics[tidIdx].tid, (confirmed) => {
+                if (confirmed && !foundDL) {
+                  foundDL           = true;
+                  entry.status      = "dl";
+                  entry.lastChecked = Date.now();
+                  entry.ripperTid   = topics[tidIdx].tid;
+                  entry.ripperSlug  = topics[tidIdx].slug || topics[tidIdx].tid;
+                  wlSave(cur); renderWatchlist();
+                  done();
+                } else {
+                  checkNext(tidIdx + 1);
+                }
+              });
+            }
+            checkNext(0);
+          });
+        }, (idx - 1) * ITEM_DELAY_MS);
+      }
+
+      scheduleNext();
     }
 
     _recheckFn = runWatchlistCheck;
