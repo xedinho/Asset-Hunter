@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Asset Hunter
 // @namespace    https://github.com/xedinho/Asset-Hunter
-// @version      5.5.4
+// @version      5.5.6
 // @description  Search Ripper.Store for assets — DL detection, watchlist, LF post system, etc
 // @author       Xedinho
 // @license      MIT
