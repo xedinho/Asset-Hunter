@@ -1,9 +1,1 @@
-batata:20
-batata:20
-batata:20
-batata:20
-batata:20
-rick:1
-jake:47
-kiba:14
-ubel:499
+
