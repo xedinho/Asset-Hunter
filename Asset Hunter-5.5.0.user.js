@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Asset Hunter
 // @namespace    https://github.com/xedinho/Asset-Hunter
-// @version      5.5.6
-// @description  Search Ripper.Store for assets — DL detection, watchlist, LF post system, etc
+// @version      5.5.7
+// @description  Search Ripper.Store for assets (DL detection, watchlist, LF post system, etc)
 // @author       Xedinho
 // @license      MIT
 // @match        *://booth.pm/*
@@ -136,7 +136,7 @@
   }
 
   // ─── Watermark ────────────────────────────────────────────────────────────
-  const WATERMARK = "\n\n---\n# Posted via[Asset Hunter](https://forum.ripper.store/topic/108432/asset-hunter)";
+  const WATERMARK = "\n\n---\n# Posted via [Asset Hunter](https://forum.ripper.store/topic/108432/asset-hunter)";
 
   // ─── Category color map ───────────────────────────────────────────────────
   const CAT_COLORS = {
